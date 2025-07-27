@@ -176,7 +176,9 @@ namespace SkillCharms {
         public static void doAllSkills() {
             orig_GiveAllSkills();
             foreach(string charm in Consts.getPdVar.Keys) {
-                SkillCharms.Charms[charm].TryGrantCharm(false);
+                if(charm != Consts.lantern) {
+                    SkillCharms.Charms[charm].TryGrantCharm(false);
+                }
             }
         }
     }

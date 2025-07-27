@@ -10,7 +10,7 @@ namespace SkillCharms
     public class SkillCharms : Mod, ILocalSettings<Settings>
     {
         new public string GetName() => "SkillCharms";
-        public override string GetVersion() => "1.0.0.0";
+        public override string GetVersion() => "1.0.1.0";
 
         internal Settings localSettings = new();
         internal static Dictionary<string, sCharm> Charms = new() {
@@ -51,6 +51,10 @@ namespace SkillCharms
         }
 
         private bool GetCharmBool(On.PlayerData.orig_GetBool orig, PlayerData self, string boolName) {
+            // This would allow unequipped skills to count towards completion percentage
+            // but this also causes excessive lag
+            // if(Environment.StackTrace.Contains("CountGameCompletion"))
+            //     return orig(self, boolName);
             if(boolName == nameof(PlayerData.hasNailArt)) {
                 foreach(string art in new string[] { Consts.cyclone, Consts.dashslash, Consts.greatslash }) {
                     if(Charms[art].IsEquipped)
@@ -68,8 +72,11 @@ namespace SkillCharms
         }
 
         private int GetCharmInt(On.PlayerData.orig_GetInt orig, PlayerData self, string intName) {
+            /*if(Environment.StackTrace.Contains("CountGameCompletion"))
+                return orig(self, intName);*/
             if(sCharm.intOverrides.ContainsKey(intName)) {
-                return Charms[sCharm.intOverrides[intName].Where(name => Charms[name].IsEquipped).First()].cost;
+                var equipped = sCharm.intOverrides[intName].Where(name => Charms[name].IsEquipped);
+                return equipped.Any() ? Charms[equipped.First()].cost : 0;
             }
             return orig(self, intName);
         }
