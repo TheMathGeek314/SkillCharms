@@ -1,4 +1,5 @@
 ﻿using Modding;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -10,7 +11,9 @@ namespace SkillCharms
     public class SkillCharms : Mod, ILocalSettings<Settings>
     {
         new public string GetName() => "SkillCharms";
-        public override string GetVersion() => "1.0.1.0";
+        public override string GetVersion() => "1.0.2.0";
+
+        private bool isCountingGameCompletion = false;
 
         internal Settings localSettings = new();
         internal static Dictionary<string, sCharm> Charms = new() {
@@ -39,6 +42,7 @@ namespace SkillCharms
             if(ModHooks.GetMod("Randomizer 4") is Mod) {
                 Log("SkillCharms may not work properly with Rando. Randomized Skills™ may not be granted correctly.");
             }
+            ModHooks.AfterSavegameLoadHook += LoadSave;
             On.PlayerData.GetBool += GetCharmBool;
             On.PlayerData.GetInt += GetCharmInt;
             On.PlayMakerFSM.OnEnable += EditFsm;
@@ -50,11 +54,27 @@ namespace SkillCharms
             }
         }
 
+        private void LoadSave(SaveGameData data) {
+            foreach(string boolCharm in Consts.getBoolCharm.Keys) {
+                if(PlayerData.instance.GetBoolInternal(boolCharm) && !Charms[Consts.getBoolCharm[boolCharm]].GotCharm) {
+                    Charms[Consts.getBoolCharm[boolCharm]].TryGrantCharm(true);
+                }
+            }
+            foreach(string intCharmKey in Consts.getIntCharm.Keys) {
+                int pdInt = PlayerData.instance.GetIntInternal(intCharmKey);
+                foreach(int intCharm in Consts.getIntCharm[intCharmKey].Keys) {
+                    if(pdInt >= intCharm && !Charms[Consts.getIntCharm[intCharmKey][intCharm]].GotCharm) {
+                        Charms[Consts.getIntCharm[intCharmKey][intCharm]].TryGrantCharm(true);
+                    }
+                }
+            }
+        }
+
         private bool GetCharmBool(On.PlayerData.orig_GetBool orig, PlayerData self, string boolName) {
-            // This would allow unequipped skills to count towards completion percentage
-            // but this also causes excessive lag
-            // if(Environment.StackTrace.Contains("CountGameCompletion"))
-            //     return orig(self, boolName);
+            if(boolName == "mothDeparted" && Environment.StackTrace.Contains("CountGameCompletion"))
+                isCountingGameCompletion = false;
+            if(isCountingGameCompletion)
+                return orig(self, boolName);
             if(boolName == nameof(PlayerData.hasNailArt)) {
                 foreach(string art in new string[] { Consts.cyclone, Consts.dashslash, Consts.greatslash }) {
                     if(Charms[art].IsEquipped)
@@ -72,8 +92,11 @@ namespace SkillCharms
         }
 
         private int GetCharmInt(On.PlayerData.orig_GetInt orig, PlayerData self, string intName) {
-            /*if(Environment.StackTrace.Contains("CountGameCompletion"))
-                return orig(self, intName);*/
+            if(intName == "fireballLevel" && Environment.StackTrace.Contains("CountGameCompletion")) {
+                isCountingGameCompletion = true;
+            }
+            if(isCountingGameCompletion)
+                return orig(self, intName);
             if(sCharm.intOverrides.ContainsKey(intName)) {
                 var equipped = sCharm.intOverrides[intName].Where(name => Charms[name].IsEquipped);
                 return equipped.Any() ? Charms[equipped.First()].cost : 0;
@@ -121,10 +144,14 @@ namespace SkillCharms
             orig(self);
             int val = self.value.Value;
             if(Consts.getIntCharm.TryGetValue(self.intName.Value, out Dictionary<int, string> spell)) {
-                if(val > 0)
-                    Charms[spell[1]].TryGrantCharm(true);
-                if(val == 2)
-                    Charms[spell[2]].TryGrantCharm(true);
+                sCharm charm1 = Charms[spell[1]];
+                if(val == 1)
+                    charm1.TryGrantCharm(true);
+                else if(val == 2) {
+                    if(!charm1.GotCharm)
+                        charm1.TryGrantCharm(false);
+                    Charms[spell[2]].TryGrantCharm(charm1.IsEquipped);
+                }
             }
         }
 
