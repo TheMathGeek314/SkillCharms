@@ -6,8 +6,8 @@ namespace SkillCharms {
     public class DebugInterop {
         private static Action orig_ToggleMothwingCloak, orig_ToggleMantisClaw, orig_ToggleCrystalHeart, orig_ToggleMonarchWings,
             orig_ToggleIsmasTear, orig_ToggleDreamNail, orig_ToggleDreamGate, orig_ToggleLantern, orig_IncreaseFireballLevel, orig_IncreaseQuakeLevel,
-            orig_IncreaseScreamLevel, orig_ToggleCycloneSlash, orig_ToggleDashSlash, orig_ToggleGreatSlash, orig_GiveAllSkills;
-        private static Hook dashHook, clawHook, cdashHook, wingsHook, ismasHook, dnailHook, dgateHook, lanternHook, vsHook, diveHook, screamHook, cycloneHook, dashslashHook, greatslashHook, allskillsHook;
+            orig_IncreaseScreamLevel, orig_ToggleCycloneSlash, orig_ToggleDashSlash, orig_ToggleGreatSlash, orig_GiveAllSkills, orig_GiveAllCharms;
+        private static Hook dashHook, clawHook, cdashHook, wingsHook, ismasHook, dnailHook, dgateHook, lanternHook, vsHook, diveHook, screamHook, cycloneHook, dashslashHook, greatslashHook, allskillsHook, allcharmsHook;
 
         public static void HookDebug() {
             foreach((string debugMethod, string myMethod, Action<Hook> assignHook) in new (string, string, Action<Hook>)[] {
@@ -25,7 +25,8 @@ namespace SkillCharms {
                 ("ToggleCycloneSlash", nameof(doCyclone), h => cycloneHook = h),
                 ("ToggleDashSlash", nameof(doDashslash), h => dashslashHook = h),
                 ("ToggleGreatSlash", nameof(doGreatslash), h => greatslashHook = h),
-                ("GiveAllSkills", nameof(doAllSkills), h => allskillsHook = h)
+                ("GiveAllSkills", nameof(doAllSkills), h => allskillsHook = h),
+                ("GiveAllCharms", nameof(doAllCharms), h => allcharmsHook = h)
             }) {
                 MethodInfo debugInfo = typeof(DebugMod.BindableFunctions).GetMethod(debugMethod, BindingFlags.Public | BindingFlags.Static);
                 MethodInfo myInfo = typeof(DebugInterop).GetMethod(myMethod, BindingFlags.Static | BindingFlags.Public);
@@ -180,6 +181,11 @@ namespace SkillCharms {
                     SkillCharms.Charms[charm].TryGrantCharm(false);
                 }
             }
+        }
+
+        public static void doAllCharms() {
+            orig_GiveAllCharms();
+            PlayerData.instance.charmSlots += sCharm.additionalNotches;
         }
     }
 }

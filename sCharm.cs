@@ -7,6 +7,7 @@ namespace SkillCharms {
     public abstract class sCharm: EasyCharm {
         public static Dictionary<string, string> boolOverrides = new();
         public static Dictionary<string, List<string>> intOverrides = new();
+        public static int additionalNotches = 0;
 
         protected override string GetName() => name;
         protected override int GetCharmCost() => cost;
@@ -36,6 +37,7 @@ namespace SkillCharms {
                 charm.GiveCharm(true);
                 if(name is Consts.shadesoul or Consts.ddark or Consts.shriek) {
                     PlayerData.instance.charmSlots += 1;
+                    additionalNotches += 1;
                     if(equip) {
                         int lowerId = SkillCharms.Charms[name switch {
                             Consts.shadesoul => Consts.vs,
@@ -48,6 +50,7 @@ namespace SkillCharms {
                 }
                 else {
                     PlayerData.instance.charmSlots += charm.cost;
+                    additionalNotches += charm.cost;
                 }
                 PlayerData.instance.SetBool($"equippedCharm_{Id}", value: equip);
             }
@@ -59,6 +62,7 @@ namespace SkillCharms {
             if(charm.GotCharm) {
                 bool levelSkill = (name is Consts.shadesoul or Consts.ddark or Consts.shriek);
                 PlayerData.instance.charmSlots -= (levelSkill ? 1 : charm.cost);
+                additionalNotches -= (levelSkill ? 1 : charm.cost);
                 charm.TakeCharm();
             }
         }

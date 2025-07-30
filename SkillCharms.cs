@@ -145,12 +145,17 @@ namespace SkillCharms
             int val = self.value.Value;
             if(Consts.getIntCharm.TryGetValue(self.intName.Value, out Dictionary<int, string> spell)) {
                 sCharm charm1 = Charms[spell[1]];
+                sCharm charm2 = Charms[spell[2]];
                 if(val == 1)
                     charm1.TryGrantCharm(true);
                 else if(val == 2) {
-                    if(!charm1.GotCharm)
+                    if(charm1.GotCharm) {
+                        charm2.TryGrantCharm(charm1.IsEquipped);
+                    }
+                    else {
                         charm1.TryGrantCharm(false);
-                    Charms[spell[2]].TryGrantCharm(charm1.IsEquipped);
+                        charm2.TryGrantCharm(true);
+                    }
                 }
             }
         }
